@@ -1,5 +1,6 @@
 package com.qoobico.remindeme.server.entity;
 
+
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;

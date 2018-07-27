@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 
 import javax.annotation.Resource;
+import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,15 +34,41 @@ public class DatabaseConfig {
     private Environment env;
 
 
-    @Bean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
-        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
-        em.setDataSource(dataSource());
-        em.setPackagesToScan(env.getRequiredProperty("db.entity.package"));
-        em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-        em.setJpaProperties(getHibernateProperties());
+//    @Bean
+//    public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+//        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+//        em.setDataSource(dataSource());
+//        em.setPackagesToScan(env.getRequiredProperty("db.entity.package"));
+//        em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+//        em.setJpaProperties(getHibernateProperties());
+//
+//        return em;
+//    }
 
-        return em;
+
+
+    @Bean
+    public EntityManagerFactory entityManagerFactory() {
+
+        HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+        vendorAdapter.setGenerateDdl(true);
+        vendorAdapter.setShowSql(false);
+        vendorAdapter.setDatabasePlatform(env.getProperty("hibernate.hibernate.dialect"));
+        LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
+        factory.setJpaVendorAdapter(vendorAdapter);
+        factory.setJpaProperties(getHibernateProperties());
+        factory.setPackagesToScan(env.getRequiredProperty("db.entity.package"));
+        factory.setDataSource(dataSource());
+        factory.afterPropertiesSet();
+        return factory.getObject();
+    }
+
+    @Bean
+    public JpaTransactionManager transactionManager() {
+        JpaTransactionManager txManager = new JpaTransactionManager();
+        txManager.setDataSource(dataSource());
+        txManager.setEntityManagerFactory(entityManagerFactory());
+        return txManager;
     }
 
     @Bean
@@ -65,13 +92,7 @@ public class DatabaseConfig {
 
     }
 
-    @Bean
-    public PlatformTransactionManager platformTransactionManager() {
 
-        JpaTransactionManager manager = new JpaTransactionManager();
-        manager.setEntityManagerFactory(entityManagerFactory().getObject());
-        return manager;
-    }
 
     private Properties getHibernateProperties() {
         try {
